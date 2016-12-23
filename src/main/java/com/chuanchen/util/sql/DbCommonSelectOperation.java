@@ -12,6 +12,8 @@ import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,6 +27,7 @@ public class DbCommonSelectOperation<T> {
 	private List<String> selectRowNames = new ArrayList<>();
 	private List<String> whereArgumentKeys = new ArrayList<>();
 	private List<Object> whereArgumentValues = new ArrayList<>();
+	private Map<String,List<Object>> conditions = new ConcurrentHashMap<>();
 	private StringBuilder sqlBuilder = new StringBuilder();
 	public String getDbName() {
 		return dbName;
@@ -138,6 +141,60 @@ public class DbCommonSelectOperation<T> {
 		whereArgumentValues.add(whereArgumentValue);
 		return this;
 	}
+	/**
+	 * add groupByCondition(添加groupby条件查询)
+	 * @param groupByCondition
+	 * @return
+	 */
+	public DbCommonSelectOperation<T> addGroupByCondition(Object groupByCondition){
+		List<Object> condition = conditions.get("groupby");
+		if(condition == null){
+			condition = new ArrayList<>();
+			condition.add(groupByCondition);
+			conditions.put("groupby", condition);
+		}else{
+			condition.add(groupByCondition);
+		}
+		return this;
+	}
+	/**
+	 * add limit condition(添加limit限制条件)
+	 * @param start
+	 * @param end
+	 * @return
+	 */
+	public DbCommonSelectOperation<T> addLimitCondition(int start,int end){
+		List<Object> condition = conditions.get("limit");
+		if(condition == null){
+			condition = new ArrayList<>();
+			condition.add(start);
+			condition.add(end);
+			conditions.put("limit", condition);
+		}else{
+			condition.add(start);
+			condition.add(end);
+		}
+		return this;
+	}
+	/**
+	 * add orderby condition(添加order by条件)
+	 * @param column
+	 * @param order
+	 * @return
+	 */
+	public DbCommonSelectOperation<T> addOrderByCondition(String column,String order){
+		List<Object> condition = conditions.get("orderby");
+		if(condition == null){
+			condition = new ArrayList<>();
+			condition.add(column);
+			condition.add(order);
+			conditions.put("orderby", condition);
+		}else{
+			condition.add(column);
+			condition.add(order);
+		}
+		return this;
+	}
 	public T selectObject(Class<T> c){
 		if(connection == null){
 			logger.info("connection can't be null,please set connection!");
@@ -172,7 +229,6 @@ public class DbCommonSelectOperation<T> {
 				}
 			}
 		}
-		System.out.println(sqlBuilder.toString());
 		PreparedStatement ps = null;
 		ResultSet rs = null;
 		T result = null;
